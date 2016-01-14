@@ -127,7 +127,7 @@ public class DishIndexTask implements Runnable{
 			try {
 				results = query.find();
 			} catch (ParseException e) {
-				LOGGER.error("Error getting dishes for restaurants", e);
+				LOGGER.error("Error getting members for lists", e);
 			}
 			if (results == null || results.size() < 1000 ) {
 				loadMore = false;
@@ -213,7 +213,6 @@ public class DishIndexTask implements Runnable{
 				return ElasticsearchRestClientFactory.getRestClient().execute(bulk);
 			} catch (IOException e) {
 				LOGGER.error("Error indexing dishes in bulk", e);
-				e.printStackTrace();
 			}
 		} 
 		return null;

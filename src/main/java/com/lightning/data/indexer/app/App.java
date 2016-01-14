@@ -15,7 +15,8 @@ public class App {
 	public static void main(String[] args) {
 		initialize();
 //		new RestaurantIndexApp().index();
-		new DishIndexApp().index();
+//		new DishIndexApp().index();
+		new DishListIndexApp().index();
 		TaskExecutor.shutDownWhenComplete();
 	}
 
