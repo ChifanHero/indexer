@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.parse4j.ParseException;
+import org.parse4j.ParseFile;
 import org.parse4j.ParseGeoPoint;
 import org.parse4j.ParseObject;
 import org.parse4j.ParseQuery;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.lightning.data.indexer.basic.ElasticsearchRestClientFactory;
 import com.lightning.data.indexer.document.DishListDocument;
 import com.lightning.data.indexer.document.GeoPoint;
+import com.lightning.data.indexer.document.Picture;
 import com.lightning.data.indexer.meta.Indices;
 import com.lightning.data.indexer.meta.ParseClass;
 import com.lightning.data.indexer.meta.Types;
@@ -97,29 +99,9 @@ public class DishListIndexTask implements Runnable {
 				fillDishNames(dish, document);
 				if (fromRestaurant != null) {
 					fillRestaurantNames(fromRestaurant, document);
-					fillLocations(fromRestaurant, document);
 				}
 			}
 		}
-	}
-
-	private void fillLocations(ParseObject fromRestaurant, DishListDocument document) {
-		if (fromRestaurant == null || document == null) {
-			return;
-		}
-		List<GeoPoint> locations = document.getLocations();
-		if (locations == null) {
-			locations = new ArrayList<GeoPoint>();
-			document.setLocations(locations);
-		}
-		if (fromRestaurant.getParseGeoPoint("coordinates") != null) {
-			ParseGeoPoint coordinates = fromRestaurant.getParseGeoPoint("coordinates");
-			GeoPoint location = new GeoPoint();
-			location.setLat(coordinates.getLatitude());
-			location.setLon(coordinates.getLongitude());
-			locations.add(location);
-		}
-
 	}
 
 	private void fillRestaurantNames(ParseObject fromRestaurant, DishListDocument document) {
@@ -185,31 +167,42 @@ public class DishListIndexTask implements Runnable {
 		return listMembers;
 	}
 
-	private List<DishListDocument> convert(List<ParseObject> dishes) {
-		if (dishes == null || dishes.isEmpty()) {
+	private List<DishListDocument> convert(List<ParseObject> dishLists) {
+		if (dishLists == null || dishLists.isEmpty()) {
 			return Collections.emptyList();
 		} else {
 			List<DishListDocument> documents = new ArrayList<DishListDocument>();
-			for (ParseObject dish : dishes) {
-				if (dish == null || dish.getObjectId() == null || dish.getObjectId().isEmpty()) {
+			for (ParseObject dishList : dishLists) {
+				if (dishList == null || dishList.getObjectId() == null || dishList.getObjectId().isEmpty()) {
 					continue;
 				}
 				DishListDocument document = new DishListDocument();
-				document.setObjectId(dish.getObjectId());
-				document.setName(dish.getString("name"));
-				document.setCreatedAt(DateConverter.convert(dish.getCreatedAt()));
-				document.setUpdatedAt(DateConverter.convert(dish.getUpdatedAt()));
-				document.setLikeCount(dish.getLong("like_count"));
-				document.setFavoriteCount(dish.getLong("favorite_count"));
-				document.setMemberCount(dish.getLong("member_count"));
-				ParseGeoPoint startingLocation = dish.getParseGeoPoint("starting_location");
+				document.setObjectId(dishList.getObjectId());
+				document.setName(dishList.getString("name"));
+				document.setCreatedAt(DateConverter.convert(dishList.getCreatedAt()));
+				document.setUpdatedAt(DateConverter.convert(dishList.getUpdatedAt()));
+				document.setLikeCount(dishList.getLong("like_count"));
+				document.setFavoriteCount(dishList.getLong("favorite_count"));
+				document.setMemberCount(dishList.getLong("member_count"));
+				ParseGeoPoint startingLocation = dishList.getParseGeoPoint("center_location");
 				if (startingLocation != null) {
-					List<GeoPoint> locations = new ArrayList<GeoPoint>();
-					GeoPoint location = new GeoPoint();
-					location.setLat(startingLocation.getLatitude());
-					location.setLon(startingLocation.getLongitude());
-					locations.add(location);
-					document.setLocations(locations);
+					GeoPoint centerLoc = new GeoPoint();
+					centerLoc.setLat(startingLocation.getLatitude());
+					centerLoc.setLon(startingLocation.getLongitude());
+					document.setCenterLocation(centerLoc);
+				}
+				ParseObject image = dishList.getParseObject("image");
+				if (image != null) {
+					Picture picture = new Picture();
+					ParseFile original = image.getParseFile("original");
+					ParseFile thumbnail = image.getParseFile("thumbnail");
+					if (original != null) {
+						picture.setOriginal(original.getUrl());
+					}
+					if (thumbnail != null) {
+						picture.setThumbnail(thumbnail.getUrl());
+					}
+					document.setPicture(picture);
 				}
 				documents.add(document);
 			}
@@ -224,6 +217,7 @@ public class DishListIndexTask implements Runnable {
 		List<Index> actions = new ArrayList<Index>();
 		for (DishListDocument document : documents) {
 			String doc = document.getJSONRepresentation().toString();
+			System.err.println(doc);
 			if (doc != null) {
 				Index index = new Index.Builder(doc).build();
 				actions.add(index);

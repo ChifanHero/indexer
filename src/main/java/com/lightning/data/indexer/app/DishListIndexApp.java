@@ -26,6 +26,7 @@ private static final int BATCH_COUNT = 100;
 		ParseQuery<ParseObject> query = ParseQuery.getQuery(ParseClass.DISH_LIST);
 		query.orderByAscending("createdAt");
 		query.limit(1000);
+		query.include("image");
 		boolean loadMore = true;
 		Object lastCreationDate = null;
 		while(loadMore) {

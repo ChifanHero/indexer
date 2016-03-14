@@ -1,6 +1,5 @@
 package com.lightning.data.indexer.document;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -16,7 +15,8 @@ public class DishListDocument implements BaseDocument{
 	private String updatedAt;
 	private List<String> dishes;
 	private List<String> restaurants;
-	private List<GeoPoint> locations;
+	private GeoPoint centerLocation;
+	private Picture picture;
 
 	public String getCreatedAt() {
 		return createdAt;
@@ -90,12 +90,22 @@ public class DishListDocument implements BaseDocument{
 		this.restaurants = restaurants;
 	}
 
-	public List<GeoPoint> getLocations() {
-		return locations;
+	
+
+	public GeoPoint getCenterLocation() {
+		return centerLocation;
 	}
 
-	public void setLocations(List<GeoPoint> locations) {
-		this.locations = locations;
+	public void setCenterLocation(GeoPoint centerLocation) {
+		this.centerLocation = centerLocation;
+	}
+
+	public Picture getPicture() {
+		return picture;
+	}
+
+	public void setPicture(Picture picture) {
+		this.picture = picture;
 	}
 
 	@Override
@@ -109,12 +119,11 @@ public class DishListDocument implements BaseDocument{
 		json.putOpt("objectId", this.objectId);
 		json.putOpt("updatedAt", this.updatedAt);
 		json.put("dishes", this.dishes);
-		if (this.locations != null && this.locations.size() > 0) {
-			List<JSONObject> lists = new ArrayList<JSONObject>();
-			for (GeoPoint location : locations) {
-				lists.add(location.getJSONRepresentation());
-			}
-			json.putOpt("locations", lists);
+		if (this.centerLocation != null) {
+			json.putOpt("center_location", this.centerLocation.getJSONRepresentation());
+		}
+		if (this.picture != null) {
+			json.putOpt("picture", this.picture.getJSONRepresentation());
 		}
 		return json;
 	}

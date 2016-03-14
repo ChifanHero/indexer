@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.parse4j.ParseException;
+import org.parse4j.ParseFile;
 import org.parse4j.ParseGeoPoint;
 import org.parse4j.ParseObject;
 import org.parse4j.ParseQuery;
@@ -183,8 +184,14 @@ public class DishIndexTask implements Runnable{
 			ParseObject image = dish.getParseObject("image");
 			if (image != null) {
 				Picture picture = new Picture();
-				picture.setOriginal(image.getString("original"));
-				picture.setThumbnail(image.getString("thumbnail"));
+				ParseFile original = image.getParseFile("original");
+				ParseFile thumbnail = image.getParseFile("thumbnail");
+				if (original != null) {
+					picture.setOriginal(original.getUrl());
+				}
+				if (thumbnail != null) {
+					picture.setThumbnail(thumbnail.getUrl());
+				}
 				document.setPicture(picture);
 			}
 			document.setUpdatedAt(DateConverter.convert(dish.getUpdatedAt()));
