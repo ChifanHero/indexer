@@ -6,6 +6,9 @@ import org.parse4j.Parse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lightning.data.indexer.notification.db.Notification;
+import com.lightning.data.indexer.orchetration.TaskExecutor;
+
 public class App {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(App.class);
@@ -16,9 +19,26 @@ public class App {
 	
 	public static void main(String[] args) {
 		initialize();
-		Timer timer = new Timer();
-		ScheduledIndexingJob job = new ScheduledIndexingJob();
-		timer.schedule(job, 0, getPeriod());
+//		scheduleJob();
+		createIndices();
+		performOneTimeJob();
+	}
+
+	private static void createIndices() {
+		IndexManager.getInstance().createIndex();
+	}
+
+	private static void performOneTimeJob() {
+		Notification notification = new Notification();
+		notification.setTriggerTime(System.currentTimeMillis());
+		new RestaurantIndexApp().index();
+		new DishIndexApp().index();
+		new DishListIndexApp().index();
+		TaskExecutor.shutDownWhenComplete();
+		IndexManager.getInstance().setAliasToNewIndex();
+		IndexManager.getInstance().deleteOldIndex();
+		notification.setFinishTime(System.currentTimeMillis());
+		notification.send();
 	}
 
 	private static void initialize() {
@@ -28,5 +48,12 @@ public class App {
 	
 	private static long getPeriod() {
 		return 4 * ONE_HOUR;
+	}
+	
+	@SuppressWarnings("unused")
+	private static void scheduleJob() {
+		Timer timer = new Timer();
+		ScheduledIndexingJob job = new ScheduledIndexingJob();
+		timer.schedule(job, 0, getPeriod());
 	}
 }

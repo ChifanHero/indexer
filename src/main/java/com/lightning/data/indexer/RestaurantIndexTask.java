@@ -16,11 +16,11 @@ import org.parse4j.ParseQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lightning.data.indexer.app.IndexManager;
 import com.lightning.data.indexer.basic.ElasticsearchRestClientFactory;
 import com.lightning.data.indexer.document.GeoPoint;
 import com.lightning.data.indexer.document.Picture;
 import com.lightning.data.indexer.document.RestaurantDocument;
-import com.lightning.data.indexer.meta.Indices;
 import com.lightning.data.indexer.meta.ParseClass;
 import com.lightning.data.indexer.meta.Types;
 import com.lightning.data.indexer.util.DateConverter;
@@ -191,7 +191,7 @@ public class RestaurantIndexTask implements Runnable{
 			actions.add(index);
 		}
 		if (actions.size() > 0) {
-			Bulk bulk = new Bulk.Builder().defaultIndex(Indices.FOOD).defaultType(Types.RESTAURANT).addAction(actions).build();
+			Bulk bulk = new Bulk.Builder().defaultIndex(IndexManager.getInstance().getIndexName()).defaultType(Types.RESTAURANT).addAction(actions).build();
 			try {
 				JestResult result =  ElasticsearchRestClientFactory.getRestClient().execute(bulk);
 				return result;
