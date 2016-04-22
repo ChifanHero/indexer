@@ -16,15 +16,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lightning.data.indexer.basic.ElasticsearchRestClientFactory;
 
-import io.searchbox.indices.aliases.AddAliasMapping;
-import io.searchbox.indices.aliases.AliasMapping;
-import io.searchbox.indices.aliases.GetAliases;
-import io.searchbox.indices.aliases.ModifyAliases;
-import io.searchbox.indices.aliases.RemoveAliasMapping;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.DeleteIndex;
+import io.searchbox.indices.aliases.AddAliasMapping;
+import io.searchbox.indices.aliases.AliasMapping;
+import io.searchbox.indices.aliases.GetAliases;
+import io.searchbox.indices.aliases.ModifyAliases;
 import io.searchbox.indices.mapping.PutMapping;
 
 public class IndexManager {
@@ -33,6 +32,8 @@ public class IndexManager {
 	private final static String DISH_MAPPING = "dish_mapping.json";
 	private final static String DISH_LIST_MAPPING = "dish_list_mapping.json";
 	private final static String INDEX_ALIAS = "food";
+	
+	private String[] systemIndices = {"xmlrpc.php", ".kibana-4", "admin"};
 	private JestClient client;
 	
 	private String indexName;
@@ -89,14 +90,14 @@ public class IndexManager {
 			return oldIndexNames;
 		}
 		try {
-			JestResult aliasResult = client.execute(new GetAliases.Builder().addIndex(INDEX_ALIAS).build());
+			JestResult aliasResult = client.execute(new GetAliases.Builder().build());
 			JsonObject resultBody = aliasResult.getJsonObject();
 			Set<Entry<String, JsonElement>> entrySet = resultBody.entrySet();
 			oldIndexNames = new ArrayList<String>();
 			for (Entry<String, JsonElement> entry : entrySet) {
 				String indexName = entry.getKey();
 				String currentIndexName = getIndexName();
-				if (!currentIndexName.equals(indexName)) {
+				if (!currentIndexName.equals(indexName) && !isSystemIndex(indexName)) {
 					oldIndexNames.add(indexName);
 				}
 			}
@@ -108,6 +109,14 @@ public class IndexManager {
 		return oldIndexNames;
 	}
 	
+	private boolean isSystemIndex(String indexName) {
+		if (indexName == null || indexName.contains("food")) {
+			return false;
+		}
+		return true;
+	}
+
+
 	private void createMappings() throws IOException {
 		createRestaurantMapping();
 		createDishMapping();
@@ -140,18 +149,19 @@ public class IndexManager {
 		return indexName;
 		
 	}
-	
+
+
 	public void setAliasToNewIndex() {
 		List<AliasMapping> mappings = new ArrayList<AliasMapping>();
 		AliasMapping addMapping = new AddAliasMapping.Builder(getIndexName(), INDEX_ALIAS).build();
 		mappings.add(addMapping);
-		List<String> oldIndexNames = getOldIndexNames();
-		if (oldIndexNames != null) {
-			for (String oldIndexName : oldIndexNames) {
-				AliasMapping removeMapping = new RemoveAliasMapping.Builder(oldIndexName, INDEX_ALIAS).build();
-				mappings.add(removeMapping);
-			}
-		}
+//		List<String> oldIndexNames = getOldIndexNames();
+//		if (oldIndexNames != null) {
+//			for (String oldIndexName : oldIndexNames) {
+//				AliasMapping removeMapping = new RemoveAliasMapping.Builder(oldIndexName, INDEX_ALIAS).build();
+//				mappings.add(removeMapping);
+//			}
+//		}
 		try {
 			client.execute(new ModifyAliases.Builder(mappings).build());
 		} catch (IOException e) {
