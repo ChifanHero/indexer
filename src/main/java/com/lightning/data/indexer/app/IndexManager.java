@@ -20,6 +20,7 @@ import io.searchbox.indices.aliases.AddAliasMapping;
 import io.searchbox.indices.aliases.AliasMapping;
 import io.searchbox.indices.aliases.GetAliases;
 import io.searchbox.indices.aliases.ModifyAliases;
+import io.searchbox.indices.aliases.RemoveAliasMapping;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.indices.CreateIndex;
@@ -33,6 +34,9 @@ public class IndexManager {
 	private final static String DISH_LIST_MAPPING = "dish_list_mapping.json";
 	private final static String INDEX_ALIAS = "food";
 	private JestClient client;
+	
+	private String indexName;
+	private List<String> oldIndexNames;
 	
 	private static IndexManager INSTANCE;
 	
@@ -48,7 +52,7 @@ public class IndexManager {
 		return INSTANCE;
 	}
 	
-	private String indexName;
+	
 	
 	public void createIndex() {
 		try {
@@ -81,24 +85,27 @@ public class IndexManager {
 	}
 	
 	private List<String> getOldIndexNames() {
+		if (oldIndexNames != null) {
+			return oldIndexNames;
+		}
 		try {
 			JestResult aliasResult = client.execute(new GetAliases.Builder().addIndex(INDEX_ALIAS).build());
 			JsonObject resultBody = aliasResult.getJsonObject();
 			Set<Entry<String, JsonElement>> entrySet = resultBody.entrySet();
-			List<String> oldNames = new ArrayList<String>();
+			oldIndexNames = new ArrayList<String>();
 			for (Entry<String, JsonElement> entry : entrySet) {
 				String indexName = entry.getKey();
 				String currentIndexName = getIndexName();
 				if (!currentIndexName.equals(indexName)) {
-					oldNames.add(indexName);
+					oldIndexNames.add(indexName);
 				}
 			}
-			return oldNames;
+			return oldIndexNames;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;
+		return oldIndexNames;
 	}
 	
 	private void createMappings() throws IOException {
@@ -135,9 +142,18 @@ public class IndexManager {
 	}
 	
 	public void setAliasToNewIndex() {
-		AliasMapping mapping = new AddAliasMapping.Builder(getIndexName(), INDEX_ALIAS).build();
+		List<AliasMapping> mappings = new ArrayList<AliasMapping>();
+		AliasMapping addMapping = new AddAliasMapping.Builder(getIndexName(), INDEX_ALIAS).build();
+		mappings.add(addMapping);
+		List<String> oldIndexNames = getOldIndexNames();
+		if (oldIndexNames != null) {
+			for (String oldIndexName : oldIndexNames) {
+				AliasMapping removeMapping = new RemoveAliasMapping.Builder(oldIndexName, INDEX_ALIAS).build();
+				mappings.add(removeMapping);
+			}
+		}
 		try {
-			client.execute(new ModifyAliases.Builder(mapping).build());
+			client.execute(new ModifyAliases.Builder(mappings).build());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
