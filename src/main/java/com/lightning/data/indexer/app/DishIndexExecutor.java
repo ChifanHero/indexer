@@ -13,11 +13,11 @@ import com.lightning.data.indexer.DishIndexTask;
 import com.lightning.data.indexer.meta.ParseClass;
 import com.lightning.data.indexer.orchetration.TaskExecutor;
 
-public class DishIndexApp {
+public class DishIndexExecutor {
 	
 private static final int BATCH_COUNT = 100;
 	
-	private final static Logger LOGGER = LoggerFactory.getLogger(DishIndexApp.class);
+	private final static Logger LOGGER = LoggerFactory.getLogger(DishIndexExecutor.class);
 	
 	private int counter = 1;
 	

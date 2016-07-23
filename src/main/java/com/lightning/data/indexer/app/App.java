@@ -31,9 +31,9 @@ public class App {
 	private static void performOneTimeJob() {
 		Notification notification = new Notification();
 		notification.setTriggerTime(System.currentTimeMillis());
-		new RestaurantIndexApp().index();
-		new DishIndexApp().index();
-		new DishListIndexApp().index();
+		new RestaurantIndexExecutor().index();
+//		new DishIndexApp().index();
+//		new DishListIndexApp().index();
 		TaskExecutor.shutDownWhenComplete();
 		IndexManager.getInstance().setAliasToNewIndex();
 		IndexManager.getInstance().deleteOldIndex();

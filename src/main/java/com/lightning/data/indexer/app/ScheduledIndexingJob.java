@@ -8,9 +8,9 @@ public class ScheduledIndexingJob extends TimerTask{
 
 	@Override
 	public void run() {
-		new RestaurantIndexApp().index();
-		new DishIndexApp().index();
-		new DishListIndexApp().index();
+		new RestaurantIndexExecutor().index();
+		new DishIndexExecutor().index();
+		new DishListIndexExecutor().index();
 //		TaskExecutor.shutDownWhenComplete();
 	}
 
